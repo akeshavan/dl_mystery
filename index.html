@@ -99,8 +99,41 @@ div.tooltip {
     </p>
     <p>
       Our first pass was to create a 2-channel image, where the first channel is the grayscale brain image, and the second channel is the "hint".
+
+      Can the model use the data and hint to predict the expert segmentation?
     </p>
     <p>
+      <p>
+        <h3>Methods</h3>
+        <ul>
+          <li>
+            We used a U-Net from the  <a href="http://github.com/uw-biomedical-ml/keratin"> keratin </a> package, based on Keras and Tensorflow
+          </li>
+          <li>
+            We made all our images 256x256
+          </li>
+          <li>
+            We split the data 80-10-10 (train-test-val)
+          </li>
+          <li>
+            We augmented the data 10 times (with small affine transforms). Then, to decrease the dependency on the hint:
+            <ul>
+              <li>
+                30% hints were additionally "messed up" by affine (base image stays the same, but hint is translated/rotated/scaled/sheared)
+              </li>
+              <li>
+                10% hints were removed altogether
+              </li>
+              <li>
+                30% hints were dilated or eroded
+              </li>
+            </ul>
+          </li>
+          <li>
+            We ran the model for at most 10 epochs. The model stops early if the dice starts to decrease.
+          </li>
+        </ul>
+      </p>
       <h3>
         Current findings
       </h3>
@@ -110,9 +143,38 @@ div.tooltip {
           The model only reaches a high dice coefficient <strong id="good_dice">50%</strong> of the time
         </li>
         <li>
-          When the model is trained with hints, it can still predict tumors <strong>without hints!</strong>
+          <strong>Mystery!</strong> When the model is trained successfully with hints, it can still predict tumors <strong>without hints!</strong>
         </li>
       </ul>
+    </p>
+    <p>
+      <h3>Remaining questions</h3>
+      <p>
+        What is it about the data that causes the model to fail at fitting? Is it:
+        <ul>
+          <li>
+            Because it doesn't like how the data is split (i.e. some subjects are very important for the machine to learn)
+          </li>
+          <li>
+            Because of some random seed initial value? in which case the same data split should fit if we run this enough times
+          </li>
+          <li>
+            Because of the order of the data? in which case, we shuffle the data a bunch of times until it fits
+          </li>
+          <li>
+            Because of hint "mess up" and order? In which case, only "mess up" hints later in the augmented dataset
+          </li>
+          <li>
+            If we augment more data, is it more likely to fit (or not) ?
+          </li>
+          <li>
+            Maybe, there is just too little data. In this case, try with the other tumor task
+          </li>
+        </ul>
+      </p>
+      <p>
+        <strong>Why does it work without hints??</strong>
+      </p>
     </p>
     <div id="left">
       <h3> Dice Score Histogram</h3>
@@ -379,7 +441,7 @@ div.tooltip {
       ax.tip.transition()
          .duration(500)
          .style("opacity", 0);
-       
+
         ax.svg.selectAll(".dot").style("fill", function(d){
           if (d.idx == window.selectedIdx){
             return "red"
