@@ -1,4 +1,6 @@
 from keratin.metrics import dice, dice_loss
+import matplotlib
+matplotlib.use("agg")
 import numpy as np
 from keratin.networks import unet
 from keras.optimizers import Adam
@@ -14,25 +16,25 @@ from skimage.morphology import dilation, erosion
 from skimage.morphology import disk
 import pandas as pd
 from nipype.utils.filemanip import load_json, save_json
-
+import sys
 
 
 def get_model():
     model = unet(256,256,n_channels=2)
-    model.compile(optimizer=Adam(lr=10e-5), 
-              loss=dice_loss, 
+    model.compile(optimizer=Adam(lr=10e-5),
+              loss=dice_loss,
               metrics=[dice])
     return model
 
 
 
 def make256(images, hints = None):
-    
+
     if not hints:
         bigM = np.zeros((len(images), 256, 256, 1))
     else:
         bigM = np.zeros((len(images), 256, 256, 2))
-    
+
     for i, im in enumerate(images):
 
         data = plt.imread(im)
@@ -41,7 +43,7 @@ def make256(images, hints = None):
             data = (data[:,:,0]/255).astype(np.float32)
             if hints:
                 hint = plt.imread(hints[i]).astype(np.float32)
-            
+
         else:
             do_mean = False
             #print("mean_data", np.mean(data))
@@ -53,33 +55,33 @@ def make256(images, hints = None):
         if data.shape[1] > 256:
             data = data[:, :256]
 
-        data_pad = np.pad(data, (((256-data.shape[0])//2, ((256-data.shape[0]) + (data.shape[0]%2 >0))//2), 
-                                 ((256-data.shape[1])//2, ((256-data.shape[1]) + (data.shape[1]%2 >0))//2)), 
+        data_pad = np.pad(data, (((256-data.shape[0])//2, ((256-data.shape[0]) + (data.shape[0]%2 >0))//2),
+                                 ((256-data.shape[1])//2, ((256-data.shape[1]) + (data.shape[1]%2 >0))//2)),
                           "constant", constant_values = (0,0))
-        
+
         if hints:
-            
+
             if hint.shape[0] > 256:
                 hint = hint[:256, :]
             if hint.shape[1] > 256:
                 hint = hint[:, :256]
-            
-            hint_pad = np.pad(hint, (((256-hint.shape[0])//2, ((256-hint.shape[0]) + (hint.shape[0]%2 >0))//2), 
-                         ((256-hint.shape[1])//2, ((256-hint.shape[1]) + (hint.shape[1]%2 >0))//2)), 
+
+            hint_pad = np.pad(hint, (((256-hint.shape[0])//2, ((256-hint.shape[0]) + (hint.shape[0]%2 >0))//2),
+                         ((256-hint.shape[1])//2, ((256-hint.shape[1]) + (hint.shape[1]%2 >0))//2)),
                   "constant", constant_values = (0,0))
 
-        
+
         if do_mean:
             bigM[i,:,:,0] = (data_pad - np.mean(data_pad)) / np.std(data_pad)
             if hints:
                 bigM[i,:,:,1] = (hint_pad - np.mean(hint_pad)) / np.std(hint_pad)
-            
+
             #bigM_mean = np.mean(bigM)
             #bigM_std = np.std(bigM)
             #bigM = (bigM - bigM_mean)/bigM_std
         else:
             bigM[i,:,:,0] = data_pad
-        
+
     return bigM
 
 
@@ -115,8 +117,8 @@ def get_split_indices(subjects, subjects_all):
 def get_random_affine():
     rotation = np.random.rand()*np.pi/45/2 * (np.random.binomial(1,0.5) * 2 - 1) # +- 4 degrees
     shear = np.random.rand()*np.pi/45/2 * (np.random.binomial(1,0.5) * 2 - 1) # +- 4 degrees
-    translation = [t * (np.random.binomial(1,0.5) * 2 - 1) for t in np.random.rand(2) * 10] 
-    scale = [1 + (t * (np.random.binomial(1,0.5) * 2 - 1)) for t in (np.random.rand(2) / 10)] 
+    translation = [t * (np.random.binomial(1,0.5) * 2 - 1) for t in np.random.rand(2) * 10]
+    scale = [1 + (t * (np.random.binomial(1,0.5) * 2 - 1)) for t in (np.random.rand(2) / 10)]
     #print("r", rotation, "s", shear, "t", translation, "sc", scale)
     return AffineTransform(scale=scale, rotation=rotation, shear=shear, translation=translation)
 
@@ -144,7 +146,7 @@ def augment_data(x_arr, y_arr):
 # In[9]:
 
 def augment_train_val(x_train, y_train, x_val, y_val, aug_num = 10):
-    
+
     x_train_aug = x_train.copy()
     y_train_aug = y_train.copy()
 
@@ -249,7 +251,7 @@ def get_new_log_dir():
     else:
         max_num = int(current_logs[-1].split("_")[-1])
         return "./log_try_%04d" % (max_num + 1)
-    
+
 def get_new_checkpoint_dir():
     current_logs = sorted(glob("./checkpoint_try_????"))
     if len(current_logs) == 0:
@@ -308,39 +310,38 @@ def get_mosaics(save_path, base_images, truth_images, agg_images, comp_images):
 
         cdata = comp_images[i]
         cdata[cdata<0.1] = np.nan
-        
+
         ax = axs[i]
         ax.imshow(bdata, cmap=plt.cm.Greys_r)
         ax.imshow(tdata, cmap=plt.cm.Reds_r, alpha=0.5, vmin=0, vmax=1)
         ax.imshow(adata, cmap=plt.cm.Blues_r, alpha=0.5, vmin=0, vmax=1)
         ax.imshow(cdata, alpha=0.5, vmin=0, vmax=1)
         ax.axis("off")
-        
+
     plt.savefig(save_path)
 
 
 # In[ ]:
 
-stats_all = []
 
 def run_everything(model_save_path, n_epochs=10, n_aug=10):
-    
+
     stats = {}
     if not exists(model_save_path):
         makedirs(model_save_path)
-    
+
     # get data
     images = sorted(glob("./ds_satra/tiles/*/base*.jpg"))
     hints = sorted(glob("./ds_satra/tiles/*/agg*.png"))
     masks =sorted(glob("./ds_satra/tiles/*/truth*.png"))
     assert(len(images) == len(masks))
     assert(len(hints) == len(masks))
-    
+
     subjects_all = [i.split("/")[-2] for i in images]
     subjects = np.asarray(sorted(list(set(subjects_all))))
 
     bigM_base, bigM_mask = get_data(images, hints, masks)
-    
+
     #splitting data
     train, test, val = get_split_indices(subjects, subjects_all)
     x_train = bigM_base[train, :]
@@ -351,98 +352,100 @@ def run_everything(model_save_path, n_epochs=10, n_aug=10):
 
     x_val = bigM_base[val, :]
     y_val = bigM_mask[val, :]
-    
+
     #augment data
     x_train_aug, y_train_aug, x_val_aug, y_val_aug = augment_train_val(x_train, y_train, x_val, y_val, aug_num = n_aug)
     remove_hints(x_train_aug, x_val_aug)
     weaken_hints(x_train_aug, x_val_aug)
     dilate_erode_hints(x_train_aug, x_val_aug)
-    
+
     #save all our data:
     """np.savez(join(model_save_path, "data.npz"), {"images": images, "hints": hints, "masks": masks,
-                                                "subjects_all": subjects_all, "subjects": subjects, 
+                                                "subjects_all": subjects_all, "subjects": subjects,
                                                 "bigM_base": bigM_base, "bigM_mask": bigM_mask,
                                                 "train_idx": train, "test_idx": test, "val_idx": val,
                                                 "x_train": x_train, "y_train": y_train, "x_val": x_val,
                                                 "y_val": y_val, "x_test": x_test, "y_test": y_test,
                                                 "x_train_aug": x_train_aug, "y_train_aug": y_train_aug,
                                                 "x_val_aug": x_val_aug, "y_val_aug": y_val_aug})"""
-    
+
     #run the model
     model = get_model()
-    model.fit(x_train_aug, y_train_aug, batch_size=4, 
-          epochs=n_epochs, verbose=1, validation_data=(x_val_aug, y_val_aug), 
-          callbacks=[keras.callbacks.TensorBoard(log_dir=get_new_log_dir(), histogram_freq=0, 
-                                                 batch_size=4, write_graph=True, 
-                                                 write_grads=True, write_images=True, 
-                                                 embeddings_freq=0, embeddings_layer_names=None, 
+    model.fit(x_train_aug, y_train_aug, batch_size=4,
+          epochs=n_epochs, verbose=1, validation_data=(x_val_aug, y_val_aug),
+          callbacks=[keras.callbacks.TensorBoard(log_dir=get_new_log_dir(), histogram_freq=0,
+                                                 batch_size=4, write_graph=True,
+                                                 write_grads=True, write_images=True,
+                                                 embeddings_freq=0, embeddings_layer_names=None,
                                                  embeddings_metadata=None),
-                     keras.callbacks.ModelCheckpoint(get_new_checkpoint_dir(), monitor='val_dice', 
-                                                     verbose=0, save_best_only=False, save_weights_only=False, 
-                                                     mode='auto', period=1)
+                     keras.callbacks.ModelCheckpoint(get_new_checkpoint_dir(), monitor='val_dice',
+                                                     verbose=0, save_best_only=False, save_weights_only=False,
+                                                     mode='auto', period=1),
+                     keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=0, verbose=0, mode='auto')
+
                     ]
     )
-    
+
     score = model.evaluate(x_test, y_test)
     print("test score with hints", score)
     stats["score_with_hints"] = score
-    
+
     x_test_no_hint = x_test.copy()
     x_test_no_hint[:,:,:,1] = 0
     score_no_hint = model.evaluate(x_test_no_hint, y_test)
     print("score w/ no hint", score_no_hint)
     stats["score w/ no hint"] = score_no_hint
-    
+
     x_test_no_brain = x_test.copy()
     x_test_no_brain[:,:,:,0] = 0
     score_no_brain = model.evaluate(x_test_no_brain, y_test)
     print("score w/ no brain", score_no_brain)
     stats["score no brain"] = score_no_brain
-    
+
     model.save("{}/model.h5".format(model_save_path))
-    
+
     # save some prediciton images
     y_pred = model.predict(x_test)
     get_mosaics(join(model_save_path, "with_hint.png"), x_test[:,:,:,0], y_test[:,:,:,0],
                x_test[:,:,:,1], y_pred[:,:,:,0])
-    
-    
+
+
     y_pred_no_hint = model.predict(x_test_no_hint)
     get_mosaics(join(model_save_path, "without_hint.png"), x_test[:,:,:,0], y_test[:,:,:,0],
                x_test[:,:,:,1], y_pred_no_hint[:,:,:,0])
-    
-    
+
+
     y_pred_no_brain = model.predict(x_test_no_brain)
     get_mosaics(join(model_save_path, "without_brain.png"), x_test[:,:,:,0], y_test[:,:,:,0],
                x_test[:,:,:,1], y_pred_no_brain[:,:,:,0])
-    
-    stats["images"] = [join(model_save_path, "with_hint.png"), 
+
+    stats["images"] = [join(model_save_path, "with_hint.png"),
                       join(model_save_path, "without_hint.png"),
-                      join(model_save_path, "without_brain.png")] 
+                      join(model_save_path, "without_brain.png")]
     stats["n_epoch"] = n_epochs
     stats["n_aug"] = n_aug
-    
+
     return stats
-    
+
 
 
 # In[ ]:
 
 from subprocess import check_call, Popen, PIPE
 
-for i in range(100):
-    stats = run_everything("test_ak_%04d" % i, 10, 10)
-    stats_all.append(stats)
-    save_json("model_stats.json", stats_all)
-    cmds = ['bash', "gitcmd.sh", i]
-    proc = Popen(cmds, stdout = PIPE)
-    proc.wait()
-    print(proc.stdout.readlines())
-    print("completed iteration", i,"\n\n")
-    
+if __name__ == "__main__":
+
+    stats_all = []
+    for i in range(100):
+        stats = run_everything("test_ak_%04d" % i, 10, 10)
+        stats_all.append(stats)
+        save_json("model_stats.json", stats_all)
+        cmds = ['bash', "gitcmd.sh", "%04d" % i]
+        proc = Popen(cmds, stdout = PIPE)
+        proc.wait()
+        print(proc.stdout.readlines())
+        print("completed iteration", i,"\n\n")
+
 
 
 # In[ ]:
-
-
-
