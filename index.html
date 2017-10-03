@@ -1,0 +1,472 @@
+<html>
+<head>
+  <title> Medulina Deep Learning </title>
+ <meta http-equiv="cache-control" content="no-cache">
+<meta http-equiv="expires" content="0">
+<meta http-equiv="pragma" content="no-cache">
+<style>.bar {
+  background: steelblue;
+  height: 30px;
+  margin: 5px;
+  color: white;
+  text-align: right;
+  padding-top: 5px;
+  display: inline-block;
+}
+
+.barText {
+  display: inline-block;
+  width: 75px;
+}
+
+.dot {
+  stroke: #313E50; /*circle border*/
+  fill: steelblue; /*circle color*/
+  r: 7; /*circle radius*/
+}
+
+body {
+  font-family: "Nunito Sans", sans-serif;
+}
+
+select {
+  height: 30px;
+  background: white;
+  font-size: inherit;
+  font-family: inherit;
+  font-weight: inherit;
+  border-style: dashed;
+}
+
+a {
+  color: steelblue;
+}
+
+.main {
+  display: table;
+  margin: 0 auto;
+}
+
+#left {
+  float: left;
+  width: 40%;
+}
+
+#right {
+  float: right;
+  width: 60%;
+}
+
+#ySelect {
+  width: 200px;
+}
+#xSelect {
+  width: 200px;
+}
+</style>
+</head>
+<body>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js"></script>
+  <script>
+  function renderBar(data) {
+    /*
+        inputs:
+          * data = object to bind to DOM. Structure:
+           data = [ {width: "px",
+            "text": "what to write on the bar",
+            "bin": "the y axis label",
+            "data": "whole histogram data, from d3.histogram()",
+            "key": "name of metric being plotted"}]
+      */
+
+    // add data
+
+    // in this case, we want to add y-axis labels.
+    /*
+        We want the HTML to look like:
+        <div class="barContainer">
+          <div class="barText">
+             binText (like 0-2)
+          </div>
+          <div class="bar">
+          </div>
+        </div>
+      */
+    var bars = d3
+      .select("#plotArea")
+      .selectAll(".barContainer")
+      .data(data)
+      .enter()
+      .append("div")
+      .attr("class", "barContainer");
+
+    bars.append("div").attr("class", "barText");
+
+    bars.append("div").attr("class", "bar").style("width", 0);
+
+    // update text
+    d3.select("#plotArea").selectAll(".barText").data(data).text(function(d) {
+      return d.bin;
+    });
+
+    // update data
+    d3
+      .select("#plotArea")
+      .selectAll(".bar")
+      .data(data)
+      .transition()
+      .duration(1000)
+      .style("width", function(d) {
+        return d.width + "px";
+      })
+      .text(function(d) {
+        return d.text;
+      });
+
+    // if a bar has 0 width, set the padding to 0
+    // this is so things look nice
+    d3.select("#plotArea").selectAll(".bar").each(function(d) {
+      if (d.width) {
+        d3.select(this).style("padding-right", "5px");
+      } else {
+        d3.select(this).style("padding-right", "0px");
+      }
+    });
+
+    // remove data
+    d3
+      .select("#plotArea")
+      .selectAll(".barContainer")
+      .data(data)
+      .exit()
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .remove();
+
+    // add some events! when you mouse over a bar
+    // highlight the corresponding points in the scatter plot
+    d3
+      .select("#plotArea")
+      .selectAll(".bar")
+      .on("mouseover", function(d) {
+        d3.select(this).style("background", "black");
+        d3.select("#scatterArea").selectAll(".dot").each(function(dScat) {
+          // if the dot's data (for the metric of the histogram) is between the two bins, make it black
+          if (dScat[d.key] < d.data.x1 && dScat[d.key] >= d.data.x0) {
+            d3.select(this).style("fill", "black");
+          }
+        });
+      })
+      .on("mouseout", function(d) {
+        // change the bar and dots to steelblue. Note the difference between SVG and HTML for color
+        d3.select(this).style("background", "steelblue");
+        d3.select("#scatterArea").selectAll(".dot").style("fill", "steelblue");
+      });
+  }
+
+  function renderAxes(data) {
+    //define margins on the plot -- this will give room for axes labels, titles
+    var margin = { top: 20, right: 20, bottom: 30, left: 60 };
+
+    // total dimensions are 500x300
+    var width = 500 - margin.left - margin.right;
+    var height = 300 - margin.top - margin.bottom;
+
+    // value -> display
+    xScale = d3.scaleLinear().range([0, width]);
+    yScale = d3.scaleLinear().range([height, 0]);
+    // in SVG, y=0 is at the top, so we switch the order
+
+    var svg = d3
+      .select("#scatterArea")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    xAxis = d3.axisBottom(xScale); //axis object
+    yAxis = d3.axisLeft(yScale);
+
+    // x-axis
+    svg
+      .append("g")
+      .attr("class", "x axis")
+      //take X to bottom of SVG
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+      .append("text")
+      .attr("class", "label")
+      .attr("x", width)
+      .attr("y", -6)
+      .attr("font-size", "2em")
+      .style("text-anchor", "end")
+      .style("fill", "black")
+      .text("X");
+
+    // y-axis
+    svg
+      .append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+      .append("text")
+      .attr("class", "label")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .attr("font-size", "2em")
+      .style("text-anchor", "end")
+      .style("fill", "black")
+      .text("Y");
+
+    return {
+      svg: svg,
+      xScale: xScale,
+      yScale: yScale,
+      xAxis: xAxis,
+      yAxis: yAxis
+    };
+  }
+
+  function scatterPoints(ax, data, xName, yName) {
+    xValue = function(d) {
+      return d[xName];
+    };
+    yValue = function(d) {
+      return d[yName];
+    };
+
+    // set domain again in case data changed bounds
+    xScale.domain([d3.min(data, xValue), d3.max(data, xValue)]);
+    yScale.domain([d3.min(data, yValue), d3.max(data, yValue)]);
+
+    //redraw axis
+    ax.svg.selectAll(".x.axis").call(ax.xAxis).selectAll(".label").text(xName);
+
+    ax.svg.selectAll(".y.axis").call(ax.yAxis).selectAll(".label").text(yName);
+
+    //add data
+    ax.svg
+      .selectAll(".dot")
+      .data(data)
+      .enter()
+      .append("circle")
+      .attr("class", "dot");
+
+    //update data
+    ax.svg
+      .selectAll(".dot")
+      .attr("cx", function(d) {
+        return ax.xScale(xValue(d));
+      })
+      .transition()
+      .duration(1000)
+      .attr("cy", function(d) {
+        return ax.yScale(yValue(d));
+      });
+
+    // events: when you highlight a dot, highlight the corresponding histogram bar
+    ax.svg
+      .selectAll(".dot")
+      .on("mouseover", function(d) {
+        d3.select(this).style("fill", "black");
+        d3.select("#plotArea").selectAll(".bar").each(function(dBar) {
+          if (d[dBar.key] < dBar.data.x1 && d[dBar.key] >= dBar.data.x0) {
+            d3.select(this).style("background", "black");
+          }
+        });
+      })
+      .on("mouseout", function() {
+        ax.svg.selectAll(".dot").style("fill", "steelblue");
+        d3.select("#plotArea").selectAll(".bar").style("background", "steelblue");
+      });
+
+    //remove dots
+    ax.svg
+      .selectAll(".dot")
+      .data(data)
+      .exit()
+      .transition()
+      .duration(1000)
+      .style("opacity", 1e-6)
+      .attr("cy", function(d) {
+        return 0;
+      })
+      .remove();
+  }
+
+  // initialize some variables
+  // they exist in the global scope
+  var qc_data,
+    snr = [],
+    hist,
+    hist_data,
+    x,
+    y,
+    histogram_data,
+    ax,
+    Xkey,
+    Ykey;
+
+  function setBarMetric(qc_data, keyName) {
+    /*
+    This function processes qc_data into histogram_data
+    Then, the bar graph is rendered
+    */
+    snr = [];
+    qc_data.forEach(function(val, idx, arr) {
+      snr.push(val[keyName]);
+    });
+
+    // our histogram widths need to be scaled
+    x = d3
+      .scaleLinear()
+      .range([0, 300])
+      .domain([Math.floor(d3.min(snr)), Math.ceil(d3.max(snr))]);
+
+    y = d3.scaleLinear().range([0, 300]).domain([0, qc_data.length]);
+
+    // d3.histogram() returns a function
+    hist = d3.histogram().domain(x.domain());
+    hist_data = hist(snr);
+
+    // hisogram_data is the data we will evenutally bind to our chart
+    // it will contain bar widths in pixels, bin names, and text labels
+    histogram_data = [];
+
+    var formatter = d3.format(".2")
+
+    // forEach is another way to do a for loop
+    hist_data.forEach(function(val, idx, arr) {
+      // val is the item in hist_data, idx is the index, and arr is the whole array
+      histogram_data.push({
+        width: y(val.length), //width of bar
+        text: val.length, //text to write on the bar
+        bin: formatter(val.x0) + "-" + formatter(val.x1), //name of the bin
+        data: val, // all of the histogram data
+        key: keyName //the name of the metric we are plotting
+      });
+    });
+
+    // now that our data is prepared, render the bar chart
+    renderBar(histogram_data);
+  }
+
+  // The following function set the bar and scatter plots based on
+  // the values selected in the <select> inputs
+
+  function setKey(obj) {
+    var key = obj.options[obj.selectedIndex].text;
+    setBarMetric(qc_data, key);
+  }
+
+  function setX(obj) {
+    Xkey = obj.options[obj.selectedIndex].text;
+    scatterPoints(ax, qc_data, Xkey, Ykey);
+  }
+
+  function setY(obj) {
+    Ykey = obj.options[obj.selectedIndex].text;
+    scatterPoints(ax, qc_data, Xkey, Ykey);
+  }
+
+  d3.json("model_stats.json", function(qcdata_remote) {
+    // this is the callback function for d3.json
+    // its first argument is the remote data
+    //console.log("data", data)
+    //keep in mind MRIQC database only returns 25 database entries by default
+
+    // define our qc_data, and some initial variables to plot
+    qc_data = qcdata_remote;
+    window.qc_data = qc_data
+    qc_data.forEach(function(val, idx, arr){
+      for (key in val){
+        if (key.indexOf("score") >= 0){arr[idx][key] = val[key][1]}
+      }
+      arr[idx]["idx"] = idx
+    })
+    Xkey = "idx";
+    Ykey = "score_with_hints";
+    var initKey = "score w/ no hint";
+
+    console.log("data from the mriqc server is", qc_data);
+
+    // fill the select boxes with the keys in qc_data
+    d3
+      .select("#histSelect")
+      .selectAll("option")
+      .data(d3.keys(qc_data[0]))
+      .enter()
+      .append("option");
+
+    d3
+      .select("#histSelect")
+      .selectAll("option")
+      .attr("value", function(d) {
+        return d;
+      })
+      .text(function(d) {
+        return d;
+      })
+      .each(function(d) {
+        if (d == initKey) {
+          d3.select(this).attr("selected", "selected");
+        }
+      });
+
+    d3
+      .select("#xSelect")
+      .selectAll("option")
+      .data(d3.keys(qc_data[0]))
+      .enter()
+      .append("option");
+
+    d3
+      .select("#xSelect")
+      .selectAll("option")
+      .attr("value", function(d) {
+        return d;
+      })
+      .text(function(d) {
+        return d;
+      })
+      .each(function(d) {
+        if (d == Xkey) {
+          d3.select(this).attr("selected", "selected");
+        }
+      });
+
+    d3
+      .select("#ySelect")
+      .selectAll("option")
+      .data(d3.keys(qc_data[0]))
+      .enter()
+      .append("option");
+
+    d3
+      .select("#ySelect")
+      .selectAll("option")
+      .attr("value", function(d) {
+        return d;
+      })
+      .text(function(d) {
+        return d;
+      })
+      .each(function(d) {
+        if (d == Ykey) {
+          d3.select(this).attr("selected", "selected");
+        }
+      });
+
+    //draw the bar graph
+    setBarMetric(qc_data, initKey);
+
+    //draw the scatter plot
+    ax = renderAxes(qc_data);
+    scatterPoints(ax, qc_data, Xkey, Ykey);
+  });
+
+  </script>
+</body>
+</html>
