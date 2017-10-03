@@ -381,8 +381,8 @@ def run_everything(model_save_path, n_epochs=10, n_aug=10):
                      keras.callbacks.ModelCheckpoint(get_new_checkpoint_dir(), monitor='val_dice',
                                                      verbose=0, save_best_only=False, save_weights_only=False,
                                                      mode='auto', period=1),
-                     keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=0, verbose=0, mode='auto')
-
+                     #keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=0, verbose=0, mode='auto'),
+                     keras.callbacks.EarlyStopping(monitor='dice', min_delta=0, patience=0, verbose=0, mode='max')
                     ]
     )
 
