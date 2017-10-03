@@ -1,0 +1,23 @@
+[
+    {
+        "images": [
+            "test_ak_0000/with_hint.png",
+            "test_ak_0000/without_hint.png",
+            "test_ak_0000/without_brain.png"
+        ],
+        "n_aug": 10,
+        "n_epoch": 10,
+        "score no brain": [
+            -0.00041743594920262694,
+            0.0004174359200987965
+        ],
+        "score w/ no hint": [
+            -0.5326769351959229,
+            0.5326769351959229
+        ],
+        "score_with_hints": [
+            -0.9029679298400879,
+            0.9029678702354431
+        ]
+    }
+]
