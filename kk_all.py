@@ -319,6 +319,7 @@ def get_mosaics(save_path, base_images, truth_images, agg_images, comp_images):
         ax.axis("off")
 
     plt.savefig(save_path)
+    plt.close("all")
 
 
 # In[ ]:
