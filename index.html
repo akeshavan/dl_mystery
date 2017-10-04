@@ -367,7 +367,7 @@ div.tooltip {
 
     // set domain again in case data changed bounds
     xScale.domain([d3.min(data, xValue), d3.max(data, xValue)]);
-    yScale.domain([d3.min(data, yValue), d3.max(data, yValue)]);
+    yScale.domain([0, 1]);
 
     //redraw axis
     ax.svg.selectAll(".x.axis").call(ax.xAxis).selectAll(".label").text(xName);
