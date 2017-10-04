@@ -130,7 +130,10 @@ div.tooltip {
             </ul>
           </li>
           <li>
-            We ran the model for at most 10 epochs. The model stops early if the dice starts to decrease.
+            We ran the model for at most 20 epochs. The model stops early if the validation dice starts to decrease.
+          </li>
+          <li>
+            We set the learning rate to 1e-7 -- this resolved the problem where the model would fail to converge 40% of the time.
           </li>
         </ul>
       </p>
@@ -140,9 +143,6 @@ div.tooltip {
       We found that
       <ul>
         <li>
-          The model only reaches a high dice coefficient <strong id="good_dice">50%</strong> of the time
-        </li>
-        <li>
           <strong>Mystery!</strong> When the model is trained successfully with hints, it can still predict tumors <strong>without hints!</strong>
         </li>
       </ul>
@@ -150,30 +150,12 @@ div.tooltip {
     <p>
       <h3>Remaining questions</h3>
       <p>
-        What is it about the data that causes the model to fail at fitting? Is it:
-        <ul>
-          <li>
-            Because it doesn't like how the data is split (i.e. some subjects are very important for the machine to learn)
-          </li>
-          <li>
-            Because of some random seed initial value? in which case the same data split should fit if we run this enough times
-          </li>
-          <li>
-            Because of the order of the data? in which case, we shuffle the data a bunch of times until it fits
-          </li>
-          <li>
-            Because of hint "mess up" and order? In which case, only "mess up" hints later in the augmented dataset
-          </li>
-          <li>
-            If we augment more data, is it more likely to fit (or not) ?
-          </li>
-          <li>
-            Maybe, there is just too little data. In this case, try with the other tumor task
-          </li>
-        </ul>
-      </p>
-      <p>
         <strong>Why does it work without hints??</strong>
+        To figure this out, I need to:
+        <ul>
+          <li> Look at the distribution of test scores without hints (is it just luck?) </li>
+          <li> Inspect the gradients and the last layer </li>
+        </ul>
       </p>
     </p>
     <div id="left">
