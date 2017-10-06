@@ -21,7 +21,7 @@ import sys
 
 def get_model():
     model = unet(256,256,n_channels=2)
-    model.compile(optimizer=Adam(lr=10e-5),
+    model.compile(optimizer=Adam(lr=10e-7),
               loss=dice_loss,
               metrics=[dice])
     return model
@@ -313,8 +313,8 @@ def get_mosaics(save_path, base_images, truth_images, agg_images, comp_images):
 
         ax = axs[i]
         ax.imshow(bdata, cmap=plt.cm.Greys_r)
-        ax.imshow(tdata, cmap=plt.cm.Reds_r, alpha=0.5, vmin=0, vmax=1)
-        ax.imshow(adata, cmap=plt.cm.Blues_r, alpha=0.5, vmin=0, vmax=1)
+        ax.imshow(tdata, cmap=plt.cm.Reds, alpha=0.5, vmin=0, vmax=1)
+        ax.imshow(adata, cmap=plt.cm.Blues, alpha=0.5, vmin=0, vmax=1)
         ax.imshow(cdata, alpha=0.5, vmin=0, vmax=1)
         ax.axis("off")
 
@@ -356,19 +356,19 @@ def run_everything(model_save_path, n_epochs=10, n_aug=10):
 
     #augment data
     x_train_aug, y_train_aug, x_val_aug, y_val_aug = augment_train_val(x_train, y_train, x_val, y_val, aug_num = n_aug)
-    remove_hints(x_train_aug, x_val_aug)
+    #remove_hints(x_train_aug, x_val_aug)
     weaken_hints(x_train_aug, x_val_aug)
     dilate_erode_hints(x_train_aug, x_val_aug)
 
     #save all our data:
-    """np.savez(join(model_save_path, "data.npz"), {"images": images, "hints": hints, "masks": masks,
+    np.savez(join(model_save_path, "data.npz"), **{"images": images, "hints": hints, "masks": masks,
                                                 "subjects_all": subjects_all, "subjects": subjects,
                                                 "bigM_base": bigM_base, "bigM_mask": bigM_mask,
                                                 "train_idx": train, "test_idx": test, "val_idx": val,
                                                 "x_train": x_train, "y_train": y_train, "x_val": x_val,
                                                 "y_val": y_val, "x_test": x_test, "y_test": y_test,
                                                 "x_train_aug": x_train_aug, "y_train_aug": y_train_aug,
-                                                "x_val_aug": x_val_aug, "y_val_aug": y_val_aug})"""
+                                                "x_val_aug": x_val_aug, "y_val_aug": y_val_aug})
 
     #run the model
     model = get_model()
@@ -383,7 +383,7 @@ def run_everything(model_save_path, n_epochs=10, n_aug=10):
                                                      verbose=0, save_best_only=False, save_weights_only=False,
                                                      mode='auto', period=1),
                      #keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=0, verbose=0, mode='auto'),
-                     keras.callbacks.EarlyStopping(monitor='dice', min_delta=0, patience=0, verbose=0, mode='max')
+                     keras.callbacks.EarlyStopping(monitor='val_dice', min_delta=0, patience=4, verbose=0, mode='max')
                     ]
     )
 
@@ -437,8 +437,8 @@ from subprocess import check_call, Popen, PIPE
 if __name__ == "__main__":
 
     stats_all = []
-    for i in range(100):
-        stats = run_everything("test_ak_%04d" % i, 10, 10)
+    for i in range(50):
+        stats = run_everything("test_ak_%04d" % i, 20, 10)
         stats_all.append(stats)
         save_json("model_stats.json", stats_all)
         cmds = ['bash', "gitcmd.sh", "%04d" % i]
