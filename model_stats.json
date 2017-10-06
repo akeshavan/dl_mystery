@@ -5,166 +5,19 @@
             "test_ak_0000/without_hint.png",
             "test_ak_0000/without_brain.png"
         ],
-        "n_aug": 10,
+        "n_aug": 20,
         "n_epoch": 20,
         "score no brain": [
-            -0.44136250019073486,
-            0.44136250019073486
+            -3.0195393264875747e-05,
+            3.019539508386515e-05
         ],
         "score w/ no hint": [
-            -4.3761810957221314e-05,
-            4.3761810957221314e-05
+            -0.34256887435913086,
+            0.34256887435913086
         ],
         "score_with_hints": [
-            -0.8747948408126831,
-            0.8747948408126831
-        ]
-    },
-    {
-        "images": [
-            "test_ak_0001/with_hint.png",
-            "test_ak_0001/without_hint.png",
-            "test_ak_0001/without_brain.png"
-        ],
-        "n_aug": 10,
-        "n_epoch": 20,
-        "score no brain": [
-            -0.027078721672296524,
-            0.027078721672296524
-        ],
-        "score w/ no hint": [
-            -0.0004421033663675189,
-            0.00044210333726368845
-        ],
-        "score_with_hints": [
-            -0.8711197972297668,
-            0.8711197376251221
-        ]
-    },
-    {
-        "images": [
-            "test_ak_0002/with_hint.png",
-            "test_ak_0002/without_hint.png",
-            "test_ak_0002/without_brain.png"
-        ],
-        "n_aug": 10,
-        "n_epoch": 20,
-        "score no brain": [
-            -0.01841084286570549,
-            0.01841084286570549
-        ],
-        "score w/ no hint": [
-            -0.02403535321354866,
-            0.02403535135090351
-        ],
-        "score_with_hints": [
-            -0.8862416744232178,
-            0.886241614818573
-        ]
-    },
-    {
-        "images": [
-            "test_ak_0003/with_hint.png",
-            "test_ak_0003/without_hint.png",
-            "test_ak_0003/without_brain.png"
-        ],
-        "n_aug": 10,
-        "n_epoch": 20,
-        "score no brain": [
-            -0.014546653255820274,
-            0.014546653255820274
-        ],
-        "score w/ no hint": [
-            -0.4656974971294403,
-            0.4656974971294403
-        ],
-        "score_with_hints": [
-            -0.8459362983703613,
-            0.8459362983703613
-        ]
-    },
-    {
-        "images": [
-            "test_ak_0004/with_hint.png",
-            "test_ak_0004/without_hint.png",
-            "test_ak_0004/without_brain.png"
-        ],
-        "n_aug": 10,
-        "n_epoch": 20,
-        "score no brain": [
-            -0.12789598107337952,
-            0.12789596617221832
-        ],
-        "score w/ no hint": [
-            -7.797656871844083e-05,
-            7.797656871844083e-05
-        ],
-        "score_with_hints": [
-            -0.9050144553184509,
-            0.9050144553184509
-        ]
-    },
-    {
-        "images": [
-            "test_ak_0005/with_hint.png",
-            "test_ak_0005/without_hint.png",
-            "test_ak_0005/without_brain.png"
-        ],
-        "n_aug": 10,
-        "n_epoch": 20,
-        "score no brain": [
-            -0.03648681566119194,
-            0.03648681566119194
-        ],
-        "score w/ no hint": [
-            -5.474839053931646e-05,
-            5.474839053931646e-05
-        ],
-        "score_with_hints": [
-            -0.912029504776001,
-            0.912029504776001
-        ]
-    },
-    {
-        "images": [
-            "test_ak_0006/with_hint.png",
-            "test_ak_0006/without_hint.png",
-            "test_ak_0006/without_brain.png"
-        ],
-        "n_aug": 10,
-        "n_epoch": 20,
-        "score no brain": [
-            -0.008918349631130695,
-            0.008918349631130695
-        ],
-        "score w/ no hint": [
-            -0.0017205550102517009,
-            0.0017205550102517009
-        ],
-        "score_with_hints": [
-            -0.6373415589332581,
-            0.6373415589332581
-        ]
-    },
-    {
-        "images": [
-            "test_ak_0007/with_hint.png",
-            "test_ak_0007/without_hint.png",
-            "test_ak_0007/without_brain.png"
-        ],
-        "n_aug": 10,
-        "n_epoch": 20,
-        "score no brain": [
-            -0.0004000962362624705,
-            0.0004000962362624705
-        ],
-        "score w/ no hint": [
-            -0.0509549155831337,
-            0.0509549155831337
-        ],
-        "score_with_hints": [
-            -0.8914216756820679,
-            0.8914216756820679
+            -0.9028915166854858,
+            0.9028915166854858
         ]
     }
 ]
