@@ -1,8 +1,8 @@
-from keratin.metrics import dice, dice_loss
+from keratin.metrics import dice, dice_loss, hausdorff, dice_weighted, dice_weighted_loss
 import matplotlib
 matplotlib.use("agg")
 import numpy as np
-from keratin.networks import unet
+from keratin.networks import unet, unet_with_dropout
 from keras.optimizers import Adam
 from skimage.transform import resize
 import keras
@@ -21,9 +21,9 @@ import sys
 
 def get_model():
     model = unet(256,256,n_channels=2)
-    model.compile(optimizer=Adam(lr=10e-7),
-              loss=dice_loss,
-              metrics=[dice])
+    model.compile(optimizer=Adam(lr=10e-6),
+              loss=dice_weighted_loss,
+              metrics=[dice_weighted, dice])
     return model
 
 
@@ -140,7 +140,7 @@ def augment_data(x_arr, y_arr):
         new_x, new_y = wiggle_image(img, y_img)
         X[idx, :,:,:] = new_x
         Y[idx,:,:,:] = new_y
-    return x_arr, y_arr
+    return X, Y
 
 
 # In[9]:
@@ -356,7 +356,7 @@ def run_everything(model_save_path, n_epochs=10, n_aug=10):
 
     #augment data
     x_train_aug, y_train_aug, x_val_aug, y_val_aug = augment_train_val(x_train, y_train, x_val, y_val, aug_num = n_aug)
-    #remove_hints(x_train_aug, x_val_aug)
+    remove_hints(x_train_aug, x_val_aug)
     weaken_hints(x_train_aug, x_val_aug)
     dilate_erode_hints(x_train_aug, x_val_aug)
 
@@ -372,18 +372,19 @@ def run_everything(model_save_path, n_epochs=10, n_aug=10):
 
     #run the model
     model = get_model()
-    model.fit(x_train_aug, y_train_aug, batch_size=4,
+    model.load_weights("pass03/test_ak_0027/model.h5")
+    model.fit(x_train_aug, y_train_aug, batch_size=32,
           epochs=n_epochs, verbose=1, validation_data=(x_val_aug, y_val_aug),
           callbacks=[keras.callbacks.TensorBoard(log_dir=get_new_log_dir(), histogram_freq=0,
-                                                 batch_size=4, write_graph=True,
+                                                 batch_size=32, write_graph=True,
                                                  write_grads=True, write_images=True,
                                                  embeddings_freq=0, embeddings_layer_names=None,
                                                  embeddings_metadata=None),
-                     keras.callbacks.ModelCheckpoint(get_new_checkpoint_dir(), monitor='val_dice',
-                                                     verbose=0, save_best_only=False, save_weights_only=False,
-                                                     mode='auto', period=1),
+                     #keras.callbacks.ModelCheckpoint(get_new_checkpoint_dir(), monitor='val_dice',
+                     #                                verbose=0, save_best_only=False, save_weights_only=False,
+                     #                                mode='auto', period=1),
                      #keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=0, verbose=0, mode='auto'),
-                     keras.callbacks.EarlyStopping(monitor='val_dice', min_delta=0, patience=4, verbose=0, mode='max')
+                     #keras.callbacks.EarlyStopping(monitor='val_dice', min_delta=0, patience=5, verbose=0, mode='max')
                     ]
     )
 
@@ -437,8 +438,8 @@ from subprocess import check_call, Popen, PIPE
 if __name__ == "__main__":
 
     stats_all = []
-    for i in range(50):
-        stats = run_everything("test_ak_%04d" % i, 20, 10)
+    for i in range(10):
+        stats = run_everything("test_ak_%04d" % i, 100, 5)
         stats_all.append(stats)
         save_json("model_stats.json", stats_all)
         cmds = ['bash', "gitcmd.sh", "%04d" % i]
